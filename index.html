@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>真的假的？！我来当PD？</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap');
+
+        :root {
+            --main-blue: #87CEEB;
+            --deep-blue: #4682B4;
+            --light-blue: #E0F7FA;
+            --bg-color: #F0F8FF;
+            --chat-bg: #E6E6E6;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(#dbe9f4 15%, transparent 16%), radial-gradient(#dbe9f4 15%, transparent 16%);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+            font-family: 'ZCOOL KuaiLe', cursive, sans-serif;
+            margin: 0; display: flex; justify-content: center; align-items: center;
+            height: 100vh; overflow: hidden; user-select: none;
+        }
+
+        .screen {
+            width: 100%; max-width: 450px; height: 95vh;
+            background: white; border-radius: 25px;
+            box-shadow: 0 15px 35px rgba(70, 130, 180, 0.2);
+            position: relative; display: none;
+            flex-direction: column; overflow: hidden;
+            border: 6px solid var(--main-blue);
+        }
+
+        /* --- 全局音乐图标 --- */
+        #global-music-control {
+            position: absolute; top: 20px; right: 20px; z-index: 1000;
+        }
+        #music-icon {
+            width: 36px; height: 36px; cursor: pointer;
+            background: white; border: 2px solid var(--deep-blue);
+            border-radius: 50%; padding: 5px; 
+            color: var(--deep-blue); display: flex; align-items: center; justify-content: center; 
+            font-size: 1.2em; box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+            transition: transform 0.1s;
+        }
+        #music-icon:active { transform: translateY(2px); box-shadow: none; }
+        
+        #music-menu {
+            position: absolute; top: 50px; right: 0; 
+            background: white; border-radius: 10px; padding: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2); display: none; 
+            flex-direction: column; gap: 5px;
+            border: 2px solid var(--main-blue); width: 150px;
+        }
+        .music-item { padding: 8px; background: #f9f9f9; border-radius: 5px; cursor: pointer; font-size: 0.85em; text-align: left; }
+        .music-item.locked { color: #aaa; cursor: not-allowed; }
+        .music-item.active { background: var(--main-blue); color: white; font-weight: bold; }
+
+        /* --- 1. 主菜单 --- */
+        #start-screen {
+            display: flex;
+            background: linear-gradient(180deg, #89f7fe 0%, #66a6ff 100%);
+            align-items: center; justify-content: center; text-align: center;
+            position: relative; overflow: hidden;
+        }
+        .cloud { position: absolute; background: rgba(255,255,255,0.3); border-radius: 50px; animation: floatCloud 10s infinite linear; }
+        @keyframes floatCloud { from {left: -100px;} to {left: 100%;} }
+        .title-box h1 { color: white; font-size: 2.8em; margin-bottom: 30px; text-shadow: 4px 4px 0px var(--deep-blue); line-height: 1.2; transform: rotate(-3deg); }
+        .menu-btn {
+            background: white; color: var(--deep-blue); border: none; padding: 12px 30px; font-size: 1.2em; border-radius: 30px;
+            margin: 10px; cursor: pointer; box-shadow: 0 5px 0 #b0e0e6; font-family: inherit; width: 200px; font-weight: bold;
+        }
+        .menu-btn:active { transform: translateY(5px); box-shadow: none; }
+
+        /* --- 2. 聊天界面 --- */
+        #chat-screen { background: var(--chat-bg); }
+        .chat-list { padding: 10px; overflow-y: auto; flex: 1; }
+        .contact-item { background: white; padding: 15px; margin-bottom: 10px; border-radius: 10px; display: flex; align-items: center; cursor: pointer; }
+        #chat-content { flex: 1; padding: 15px; overflow-y: auto; display: none; flex-direction: column; }
+        .message { margin-bottom: 15px; display: flex; align-items: flex-start; }
+        .message.me { flex-direction: row-reverse; }
+        .bubble { padding: 10px 15px; border-radius: 10px; max-width: 70%; font-size: 0.95em; line-height: 1.4; box-shadow: 0 2px 2px rgba(0,0,0,0.05);}
+        .message.her .bubble { background: white; margin-left: 10px; border-top-left-radius: 0; }
+        .message.me .bubble { background: var(--main-blue); color: white; margin-right: 10px; border-top-right-radius: 0; }
+        .chat-options { padding: 20px; background: #f7f7f7; display: none; justify-content: space-around; }
+
+        /* --- 3. 游戏主界面 --- */
+        #header { padding: 15px; background: white; color: var(--deep-blue); text-align: center; position: relative; z-index: 20; border-bottom: 2px dashed var(--main-blue); }
+        #main-area {
+            flex: 1; position: relative; display: flex; justify-content: center; align-items: center; 
+            background: white; overflow: hidden; margin: 10px; border: 3px solid #eee; border-radius: 15px;
+        }
+        .sticker { position: absolute; font-size: 2em; opacity: 0.8; pointer-events: none; z-index: 5; }
+        .sticker-tl { top: 10px; left: 10px; transform: rotate(-15deg); }
+        .sticker-tr { top: 10px; right: 10px; transform: rotate(15deg); }
+        .sticker-bl { bottom: 10px; left: 10px; transform: rotate(10deg); }
+        .sticker-br { bottom: 10px; right: 10px; transform: rotate(-10deg); font-size: 3em; opacity: 0.2; }
+        #character { width: 250px; height: 250px; image-rendering: pixelated; transition: all 0.5s; z-index: 10; position: relative; }
+        .evolving { filter: brightness(1.5) blur(2px); transform: scale(1.1); }
+        #game-bubble {
+            position: absolute; top: 10px; background: white; padding: 10px 15px; border-radius: 15px; 
+            border: 2px solid var(--deep-blue); max-width: 80%; text-align: center; opacity: 0; transition: opacity 0.3s; z-index: 15;
+            box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+        }
+        #center-notification {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95); padding: 25px; border-radius: 20px;
+            border: 4px solid var(--deep-blue); text-align: center; color: var(--deep-blue);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 50; display: none; opacity: 0;
+            transition: opacity 0.3s; pointer-events: none; width: 75%; font-size: 1.2em;
+        }
+        #controls { padding: 15px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; background: var(--light-blue); }
+        .game-btn { 
+            background: white; border: none; border-radius: 15px; padding: 12px 2px;
+            color: var(--deep-blue); font-family: inherit; cursor: pointer; font-size: 0.9em; 
+            box-shadow: 0 4px 0 #b0c4de; transition: transform 0.1s;
+        }
+        .game-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #b0c4de; }
+        #progress-container { width: 80%; margin: 5px auto; height: 10px; background: #eee; border-radius: 10px; overflow: hidden; }
+        #progress-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #87CEEB, #4682B4); border-radius: 10px; transition: width 0.3s ease; }
+
+        /* --- 4. 写信界面 --- */
+        #editor-screen { background: #fffaf0; }
+        #wish-input { width: 80%; height: 50%; margin: 20px auto; padding: 20px; border: 2px dashed var(--main-blue); border-radius: 10px; background:white; font-family: inherit; font-size: 1.1em; color: var(--deep-blue);}
+
+        /* --- 5. 最终桌面结局 --- */
+        #ending-table-screen {
+            background: #fdf5e6; /* 米色桌面 */
+            display: none; align-items: center; justify-content: center;
+            position: relative; cursor: pointer; /* 提示可点击 */
+        }
+        #ending-table-screen::before {
+            content: ""; position: absolute; top:0; left:0; width:100%; height:100%;
+            background-image: repeating-linear-gradient(45deg, rgba(0,0,0,0.02) 0px, rgba(0,0,0,0.02) 2px, transparent 2px, transparent 10px);
+            pointer-events: none;
+        }
+        
+        .table-item {
+            position: absolute; opacity: 0; transform: scale(1.5) rotate(10deg);
+            transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        }
+        .table-item.drop { opacity: 1; transform: scale(1) rotate(var(--r)); }
+
+        .final-envelope { width: 220px; height: 140px; background: var(--main-blue); border-radius: 5px; z-index: 1; }
+        .final-sticker { width: 80px; z-index: 2; image-rendering: pixelated; }
+        .final-polaroid {
+            padding: 10px 10px 40px 10px; background: white; width: 160px; z-index: 5;
+            transform: rotate(-5deg); text-align: center;
+        }
+        .final-polaroid img { width: 100%; border-radius: 2px; }
+
+        /* 提示小箭头 */
+        #click-hint-arrow {
+            position: absolute; top: 70%; left: 50%; transform: translateX(-50%);
+            font-size: 2em; color: var(--deep-blue); z-index: 30;
+            animation: bounce 1s infinite; display: none; pointer-events: none;
+            text-shadow: 0 2px 5px rgba(255,255,255,0.8);
+        }
+        @keyframes bounce { 0%, 100% {transform:translate(-50%, 0);} 50% {transform:translate(-50%, 10px);} }
+
+        /* 模糊层与文字 */
+        #ending-blur-layer {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            pointer-events: none; transition: backdrop-filter 1s; z-index: 10;
+        }
+        .blur-active { backdrop-filter: blur(8px); background: rgba(255,255,255,0.4); }
+
+        #final-text-container {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            text-align: center; z-index: 40; opacity: 0; transition: opacity 2s; width: 100%;
+        }
+        #final-text-container h1 {
+            font-size: 2.2em; color: var(--deep-blue);
+            text-shadow: 2px 2px 0 white, 0 0 20px white;
+            margin-bottom: 10px;
+        }
+        .credits {
+            font-size: 0.9em; color: #666; font-family: monospace; 
+            background: white; padding: 5px 15px; border-radius: 20px; 
+            display: inline-block; margin-top: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+    </style>
+</head>
+<body>
+
+    <audio id="bgm-player" loop></audio>
+
+    <div id="global-music-control" style="display:none;">
+        <div id="music-icon" onclick="toggleMusicMenu()">🎵</div>
+        <div id="music-menu">
+            <div class="music-item active" onclick="playMusic('default', this)">🎹 默认曲</div>
+            <div class="music-item locked" id="track-s2" onclick="playMusic('skin', this)">🔒 Under My Skin</div>
+            <div class="music-item locked" id="track-s3" onclick="playMusic('boss', this)">🔒 BOSS</div>
+            <div class="music-item locked" id="track-s4" onclick="playMusic('bbb', this)">🔒 B.B.B</div>
+            <div class="music-item locked" id="track-s5" onclick="playMusic('papa', this)">🔒 PAPARAZZI ARRIVE</div>
+        </div>
+    </div>
+
+    <div id="start-screen" class="screen" style="display: flex;">
+        <div class="cloud" style="width: 80px; height: 30px; top: 10%;"></div>
+        <div class="cloud" style="width: 120px; height: 40px; top: 25%; animation-duration: 15s;"></div>
+        
+        <div class="title-box">
+            <h1>真的假的？！<br>我来当PD？</h1>
+            <button class="menu-btn" onclick="startChat()">🎬 开始当PD</button>
+            <button class="menu-btn" onclick="viewLetters()">💌 查看信件</button>
+        </div>
+    </div>
+
+    <div id="letters-list-screen" class="screen" style="background: #F0F8FF; padding: 20px; overflow-y: auto;">
+        <h2 style="text-align: center; color: var(--deep-blue);">🗂️ 送出的信</h2>
+        <div id="letters-container"></div>
+        <button class="menu-btn" style="margin: 20px auto; width: 120px;" onclick="goHome()">返回</button>
+    </div>
+
+    <div id="chat-screen" class="screen">
+        <div class="chat-header" style="background:#f7f7f7; padding:15px; border-bottom:1px solid #ddd; text-align:center; font-weight:bold;">MiChat (99+)</div>
+        <div id="contact-list" class="chat-list">
+            <div class="contact-item" onclick="openChat()">
+                <img src="images/avatar_miche.jpg" style="width:50px; height:50px; border-radius:10px; margin-right:15px; background:#ddd; object-fit:cover;" onerror="this.src='https://via.placeholder.com/50'">
+                <div style="flex:1;">
+                    <div style="font-weight:bold;">Miche (烧烧)</div>
+                    <div style="font-size:0.8em; color:gray;">[震动] 宝宝！！救命！！</div>
+                </div>
+                <div style="background:red; color:white; border-radius:50%; padding:2px 8px; font-size:0.8em;">1</div>
+            </div>
+            <div class="contact-item">
+                <img src="images/avatar_other.jpg" style="width:50px; height:50px; border-radius:10px; margin-right:15px; background:#ddd;" onerror="this.src='https://via.placeholder.com/50'">
+                <div><div style="font-weight:bold;">外卖</div><div style="font-size:0.8em; color:gray;">外卖放门口了</div></div>
+            </div>
+        </div>
+        <div id="chat-content"></div>
+        <div id="chat-options" class="chat-options">
+            <button class="game-btn" onclick="handleChatChoice(false)">啊……我不干……</button>
+            <button class="game-btn" style="background:var(--main-blue); color:white; box-shadow: 0 4px 0 #4682B4;" onclick="handleChatChoice(true)">好！开始吧！</button>
+        </div>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <div id="header">
+            <div id="stage-title" style="font-size: 1.5em; font-weight: bold;">Stage 1</div>
+            <div id="progress-container"><div id="progress-bar"></div></div>
+        </div>
+        
+        <div id="main-area">
+            <div class="sticker sticker-tl">☁️</div>
+            <div class="sticker sticker-tr">✨</div>
+            <div class="sticker sticker-bl">🎵</div>
+            <div class="sticker sticker-br">A2O</div>
+            
+            <div id="game-bubble"></div>
+            <div id="center-notification"></div>
+            <img id="character" src="images/s1_idle.gif" alt="Miche">
+        </div>
+        
+        <div id="controls"></div>
+    </div>
+
+    <div id="editor-screen" class="screen">
+        <div style="padding: 20px; text-align: center;"><h2 style="color: var(--deep-blue);">恭喜跟烧烧一起通关！有什么话想对烧烧说吗 ✍️</h2></div>
+        <div style="padding:10px; display:flex; gap:10px; justify-content:center;">
+            <button class="game-btn" style="width:auto; padding:5px 15px;" onclick="document.getElementById('wish-input').value+='🩵'">🩵</button>
+            <button class="game-btn" style="width:auto; padding:5px 15px;" onclick="document.getElementById('wish-input').value+='🥺'">🥺</button>
+            <button class="game-btn" style="width:auto; padding:5px 15px;" onclick="document.getElementById('wish-input').value+='🎂'">🎂</button>
+        </div>
+        <textarea id="wish-input" placeholder="亲爱的烧烧..."></textarea>
+        <button class="menu-btn" style="margin: 0 auto;" onclick="runEndingSequence()">发送信件 ✉️</button>
+    </div>
+
+    <div id="ending-table-screen" class="screen" onclick="triggerFinalReveal()">
+        <div id="ending-blur-layer"></div>
+        <div id="table-items-container" style="width:100%; height:100%; position:relative;"></div>
+        
+        <div id="click-hint-arrow">👆</div>
+
+        <div id="final-text-container">
+            <h1>陈佳仪<br>出道一周年快乐！<br>🎉</h1>
+            <div class="credits">@DDDD & Gemini</div>
+            <br><br>
+            <button class="menu-btn" onclick="goHome()">返回主页</button>
+        </div>
+    </div>
+
+<script>
+    const CLICK_TARGET = 10;
+    const stages = [
+        {
+            title: "Stage 1",
+            levelUpText: "恭喜！迈出了梦想的第一步！✨",
+            songId: null,
+            idleImg: "images/s1_idle.gif",
+            idleTexts: ["呼... 今天的舞蹈动作有没有进步一点点？🥺", "为了梦想，我会坚持的！💪", "重来！"],
+            actions: [
+                { name: "🖐️ 摸摸头", img: "images/s1_pat.gif", text: "被摸头了⁄(⁄ ⁄•⁄ω⁄•⁄ ⁄)⁄" },
+                { name: "🎤 练唱歌", img: "images/s1_sing.gif", text: "咳咳... 这首歌只唱给你听哦~🎵" },
+                { name: "🍦 吃冰淇淋", img: "images/s1_icecream.gif", text: "哇！是冰淇淋！吃一口... 就一口... 👉👈" }
+            ]
+        },
+        {
+            title: "Stage 2",
+            levelUpText: "解锁新歌：Under My Skin 🕶️",
+            songId: "track-s2",
+            idleImg: "images/s2_idle.gif",
+            idleTexts: ["大家好，我是A2O MAY的陈佳仪Miche！烧~一米达！😈", "终于见到你们了！🥺", "看到台下的你们，我就一点也不紧张啦🩵"],
+            actions: [
+                { name: "🎤 接受采访", img: "images/s2_interview.gif", text: "刚刚表现得怎么样呢？" },
+                { name: "💃 练跳舞", img: "images/s2_dance.gif", text: "每一个动作都要做到完美！💃" },
+                { name: "🍰 提拉米苏", img: "images/s2_tiramisu.gif", text: "幸福的瞬间~😗" }
+            ]
+        },
+        {
+            title: "Stage 3",
+            levelUpText: "解锁新歌：BOSS 😎",
+            songId: "track-s3",
+            idleImg: "images/s3_idle.gif",
+            idleTexts: ["新歌BOSS，宝宝们觉得怎么样？", "你们的笑容，就是烧烧收到的最棒的礼物啦🎁", "... (呆"],
+            actions: [
+                { name: "🤏 戳戳脸", img: "images/s3_poke.gif", text: "哎呀！这可是妆发老师好不容易弄好的发型~~！" },
+                { name: "✍️ 空气签名", img: "images/s3_sign.gif", text: "中间是小皇冠~ 👑" },
+                { name: "🐟 酸菜鱼", img: "images/s3_fish.gif", text: "虽然很难选 但酸菜鱼是最喜欢吃的TOP1！" }
+            ]
+        },
+        {
+            title: "Stage 4",
+            levelUpText: "I'M BIGGER BADDER BETTER 😎",
+            songId: "track-s4",
+            idleImg: "images/s4_idle.gif",
+            idleTexts: ["你们的每一条消息烧烧都在看哦💪", "今天的烧烧有没有很帅？快夸我！😎", "谢谢你们，让一切变得那么有价值🩵"],
+            actions: [
+                { name: "🫂 抱抱", img: "images/s4_hug.gif", text: "抱抱！见到你们真的超级安心🩵 蹭蹭~" },
+                { name: "💤 睡觉觉", img: "images/s4_sleep.gif", text: "稍微休息一下下... 梦里也要见到小天使们...💤" },
+                { name: "🍒 吃水果", img: "images/s4_fruit.gif", text: "来吃水果！补充维C ✨" }
+            ]
+        },
+        {
+            title: "Stage 5",
+            levelUpText: "倒计时三秒我停不下来 📸",
+            songId: "track-s5",
+            idleImg: "images/s5_idle.gif",
+            idleTexts: ["不知不觉就一周年啦！🕰️", "这次回归见了好多好多MAYnia🩵🫳", "未来也要在一起哦，一周年快乐！🎉"],
+            actions: [
+                { name: "🌟 唱跳舞台", img: "images/s5_stage.gif", text: "每一次舞台都想做得更好！" },
+                { name: "🏆 获奖", img: "images/s5_award.gif", text: "谢谢你们，烧烧爱你们🥺" },
+                { name: "🎂 吃蛋糕", img: "images/cake_final.gif", text: "这个蛋糕是送给我的吗？🥺 谢谢一直陪着我的你们！" }
+            ]
+        }
+    ];
+
+    let currentStage = 0;
+    let clickCount = 0;
+    let isInteracting = false;
+    let isEvolving = false;
+    let musicStarted = false;
+    const charImg = document.getElementById('character');
+    const stageTitle = document.getElementById('stage-title');
+    const progressBar = document.getElementById('progress-bar');
+    const controls = document.getElementById('controls');
+    const gameBubble = document.getElementById('game-bubble');
+    const centerNotify = document.getElementById('center-notification');
+
+    function showScreen(id) { 
+        document.querySelectorAll('.screen').forEach(s => s.style.display = 'none'); 
+        document.getElementById(id).style.display = 'flex'; 
+        const musicCtrl = document.getElementById('global-music-control');
+        musicCtrl.style.display = (id === 'start-screen') ? 'none' : 'block';
+    }
+
+    // --- 音乐逻辑 (修改版：解锁不自动切歌) ---
+    function initMusic() {
+        if (!musicStarted) {
+            playMusic('default');
+            musicStarted = true;
+        }
+    }
+    function playMusic(trackName, element) {
+        if (element && element.classList.contains('locked')) return;
+        const player = document.getElementById('bgm-player');
+        player.src = `music/bgm_${trackName}.mp3`;
+        player.play().catch(e => console.log("等待交互..."));
+        document.querySelectorAll('.music-item').forEach(i => i.classList.remove('active'));
+        if(element) element.classList.add('active');
+        else if(trackName === 'default') document.querySelector('.music-item').classList.add('active');
+        document.getElementById('music-menu').style.display = 'none';
+    }
+    function toggleMusicMenu() { const m = document.getElementById('music-menu'); m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; }
+    function unlockMusic(stageIdx) {
+        const stageData = stages[stageIdx];
+        if (stageData && stageData.songId) {
+            const item = document.getElementById(stageData.songId);
+            item.classList.remove('locked');
+            item.innerText = item.innerText.replace('🔒', '🎵');
+            // 修改：这里不再自动调用 playMusic()
+        }
+    }
+    function goHome() { showScreen('start-screen'); playMusic('default'); }
+    function viewLetters() { initMusic(); showScreen('letters-list-screen'); loadLetters(); }
+
+    // --- 聊天 ---
+    let chatStep = 0;
+    const chatScript = [
+        { type: 'her', text: '宝宝！！你在吗？！😱' },
+        { type: 'her', text: '呜呜呜，我好像被吸进一个像素世界了... 👾' },
+        { type: 'her', text: '这里有个声音说，只有你来当PD进行养成才能带我通关！' },
+        { type: 'her', text: '你需要通过【摸摸】和【投喂】来增加顶部的爱心值💗' },
+        { type: 'her', text: '哦对了！直接点击我也可以增加爱心哦！💖' },
+        { type: 'her', text: '右上角可以切换BGM，不换的话就是默认音乐一直陪着你~🎵' },
+        { type: 'her', text: '听说最后还有隐藏惊喜... 🎁' },
+        { type: 'her', text: '怎么样？愿意帮帮烧烧吗？🥺' }
+    ];
+    function startChat() { initMusic(); showScreen('chat-screen'); document.getElementById('contact-list').style.display = 'block'; document.getElementById('chat-content').style.display = 'none'; document.getElementById('chat-options').style.display = 'none'; chatStep = 0; }
+    function openChat() { document.getElementById('contact-list').style.display = 'none'; document.getElementById('chat-content').style.display = 'flex'; playChatScript(); }
+    function playChatScript() {
+        if (chatStep < chatScript.length) {
+            const msg = chatScript[chatStep];
+            addMsg(msg.type, msg.text);
+            chatStep++;
+            setTimeout(playChatScript, 1200);
+        } else { document.getElementById('chat-options').style.display = 'flex'; }
+    }
+    function addMsg(type, text) {
+        const div = document.createElement('div');
+        div.className = `message ${type}`;
+        const avatarHtml = type === 'her' ? `<img src="images/avatar_miche.jpg" style="width:35px;height:35px;border-radius:10px;margin-right:10px;" onerror="this.src='https://via.placeholder.com/35'">` : '';
+        div.innerHTML = `${avatarHtml}<div class="bubble">${text}</div>`;
+        const content = document.getElementById('chat-content');
+        content.appendChild(div); content.scrollTop = content.scrollHeight;
+    }
+    function handleChatChoice(agree) {
+        document.getElementById('chat-options').style.display = 'none';
+        if (agree) {
+            addMsg('me', '好！开始吧！放心交给我！');
+            setTimeout(() => { addMsg('her', '太棒啦！最爱你了🩵 那我们开始咯！'); setTimeout(startGame, 2000); }, 1000);
+        } else {
+            addMsg('me', '啊……我不干……');
+            setTimeout(() => { addMsg('her', '真的吗？🥺'); addMsg('her', '真的要丢下烧烧吗？😭😭😭'); setTimeout(() => { document.getElementById('chat-options').style.display = 'flex'; }, 1500); }, 1000);
+        }
+    }
+
+    // --- 游戏主逻辑 ---
+    function startGame() {
+        showScreen('game-screen');
+        currentStage = 0; isInteracting = false; isEvolving = false;
+        updateStageDisplay();
+        charImg.onclick = () => {
+            if (isInteracting || isEvolving) return;
+            const texts = stages[currentStage].idleTexts;
+            showBubble(texts[Math.floor(Math.random() * texts.length)]);
+            addProgress();
+        };
+    }
+    function updateStageDisplay() {
+        const stageData = stages[currentStage];
+        stageTitle.innerText = stageData.title;
+        charImg.src = stageData.idleImg;
+        controls.innerHTML = '';
+        stageData.actions.forEach((action) => {
+            const btn = document.createElement('button');
+            btn.className = 'game-btn'; btn.innerText = action.name;
+            btn.onclick = () => handleAction(action);
+            controls.appendChild(btn);
+        });
+        clickCount = 0; updateProgressBar();
+    }
+    function handleAction(action) {
+        if (isInteracting || isEvolving) return;
+        isInteracting = true;
+        charImg.src = action.img;
+        showBubble(action.text);
+        setTimeout(() => { charImg.src = stages[currentStage].idleImg; isInteracting = false; }, 3000);
+        addProgress();
+    }
+    function addProgress() {
+        if (isEvolving) return;
+        if (clickCount < CLICK_TARGET) {
+            clickCount++;
+            updateProgressBar();
+            if (clickCount >= CLICK_TARGET) {
+                if (currentStage < stages.length - 1) setTimeout(startEvolution, 500);
+                else setTimeout(startEndingSequence, 500);
+            }
+        }
+    }
+    function updateProgressBar() { const percentage = (clickCount / CLICK_TARGET) * 100; progressBar.style.width = Math.min(percentage, 100) + '%'; }
+    function startEvolution() {
+        isEvolving = true;
+        showCenterNotify("咦... 好像发生了什么变化...✨", 2000);
+        setTimeout(() => { charImg.classList.add('evolving'); }, 1000);
+        setTimeout(() => {
+            currentStage++;
+            unlockMusic(currentStage); // 仅解锁不播放
+            updateStageDisplay();
+            charImg.classList.remove('evolving');
+            const nextStageData = stages[currentStage];
+            showCenterNotify(`✨ ${nextStageData.levelUpText} ✨`, 3000);
+            isEvolving = false;
+        }, 3000);
+    }
+    function startEndingSequence() {
+        isEvolving = true;
+        const stageData = stages[currentStage];
+        showCenterNotify(`✨ ${stageData.levelUpText} ✨`, 3000);
+        setTimeout(() => { showScreen('editor-screen'); }, 3000);
+    }
+    function showBubble(text) { gameBubble.innerText = text; gameBubble.style.opacity = 1; setTimeout(() => { gameBubble.style.opacity = 0; }, 2500); }
+    function showCenterNotify(htmlText, duration) {
+        centerNotify.innerHTML = htmlText; centerNotify.style.display = 'block';
+        setTimeout(() => { centerNotify.style.opacity = 1; }, 10);
+        setTimeout(() => { centerNotify.style.opacity = 0; setTimeout(() => { centerNotify.style.display = 'none'; }, 300); }, duration);
+    }
+
+    // --- 最终结局 (点击触发版) ---
+    let endingItemsDropped = false;
+
+    function runEndingSequence() {
+        const text = document.getElementById('wish-input').value;
+        if (!text) return alert("写点什么吧~");
+        const savedLetters = JSON.parse(localStorage.getItem('miche_letters') || '[]');
+        savedLetters.push({ content: text, date: new Date().toLocaleDateString() });
+        localStorage.setItem('miche_letters', JSON.stringify(savedLetters));
+
+        showScreen('ending-table-screen');
+        const container = document.getElementById('table-items-container');
+        container.innerHTML = '';
+        endingItemsDropped = false;
+        document.getElementById('click-hint-arrow').style.display = 'none';
+        document.getElementById('ending-blur-layer').classList.remove('blur-active');
+        document.getElementById('final-text-container').style.opacity = 0;
+
+        const items = [
+            { type: 'div', class: 'final-envelope', css: 'left: 30%; top: 30%; background: #87CEEB; transform: rotate(-10deg);', delay: 500 },
+            { type: 'img', src: 'images/s1_idle.gif', class: 'final-sticker', css: 'left: 60%; top: 20%; transform: rotate(15deg);', delay: 1500 },
+            { type: 'img', src: 'images/s5_idle.gif', class: 'final-sticker', css: 'left: 20%; top: 60%; transform: rotate(-20deg);', delay: 2500 },
+            { type: 'polaroid', src: 'images/polaroid_cake.jpg', css: 'left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(5deg);', delay: 3500 }
+        ];
+
+        let maxDelay = 0;
+        items.forEach(item => {
+            if(item.delay > maxDelay) maxDelay = item.delay;
+            setTimeout(() => {
+                let el;
+                if (item.type === 'polaroid') {
+                    el = document.createElement('div');
+                    el.className = 'table-item final-polaroid drop';
+                    el.innerHTML = `<img src="${item.src}"><div style="font-size:0.8em; color:#555; margin-top:5px;">Happy 1st Anniversary</div>`;
+                } else if (item.type === 'img') {
+                    el = document.createElement('img');
+                    el.src = item.src; el.className = 'table-item final-sticker drop';
+                } else {
+                    el = document.createElement('div'); el.className = `table-item ${item.class} drop`;
+                }
+                const rotation = item.css.match(/rotate\((.*?)\)/)[1];
+                el.style.cssText += item.css;
+                el.style.setProperty('--r', rotation);
+                container.appendChild(el);
+            }, item.delay);
+        });
+
+        // 掉落完成后，显示提示箭头，并允许点击
+        setTimeout(() => {
+            endingItemsDropped = true;
+            document.getElementById('click-hint-arrow').style.display = 'block';
+        }, maxDelay + 1000);
+    }
+
+    function triggerFinalReveal() {
+        if (!endingItemsDropped) return; // 还没掉完不许点
+        endingItemsDropped = false; // 防止重复点
+        document.getElementById('click-hint-arrow').style.display = 'none';
+        document.getElementById('ending-blur-layer').classList.add('blur-active');
+        document.getElementById('final-text-container').style.opacity = 1;
+        // 这里可以再放一点礼花效果
+    }
+    
+    function loadLetters() {
+        const container = document.getElementById('letters-container');
+        container.innerHTML = '';
+        const savedLetters = JSON.parse(localStorage.getItem('miche_letters') || '[]');
+        if (savedLetters.length === 0) { container.innerHTML = '<p style="text-align:center; color:gray;">还没有信件哦~</p>'; }
+        else { savedLetters.reverse().forEach(l => { container.innerHTML += `<div style="background:white;padding:15px;margin-bottom:10px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,0.1);">${l.content}<div style="font-size:0.8em;color:gray;margin-top:5px;">${l.date}</div></div>`; }); }
+    }
+</script>
+</body>
+</html>
